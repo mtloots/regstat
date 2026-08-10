@@ -1,5 +1,7 @@
 # regstat
 
+[![R-CMD-check](https://github.com/mtloots/regstat/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mtloots/regstat/actions/workflows/R-CMD-check.yaml)
+
 An exact, covariance-free test for a change in covariance (dependence) structure — the omnibus form of
 the differential-network question. The likelihood-ratio null (the real Jacobi ensemble) is free of the
 unknown common covariance, so one calibration serves every covariance with no estimate of the nuisance
