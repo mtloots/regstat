@@ -25,3 +25,9 @@ characteristic function (\code{method = "exact"}); \code{method = "mc"} uses a M
 instead. Either way the test needs no estimate of the common covariance, its advantage over
 high-dimensional competitors near the dimension barrier where that covariance is hardest to estimate.
 }
+\examples{
+set.seed(1)
+XA <- matrix(rnorm(180), 60, 3)
+XB <- matrix(rnorm(150), 50, 3) \%*\% diag(c(1, 1.6, 0.7))
+cov_test(XA, XB, method = "exact")$p.value
+}

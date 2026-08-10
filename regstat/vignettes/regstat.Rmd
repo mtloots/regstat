@@ -1,0 +1,95 @@
+---
+title: "An exact test for a change in covariance structure"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{An exact test for a change in covariance structure}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(regstat)
+```
+
+## The problem
+
+Did the dependence structure change between two periods? The likelihood-ratio statistic is
+Box's M, and its null distribution has traditionally been handled by asymptotic approximations
+that are poor exactly where the question is interesting: small samples and moderate dimension.
+
+```{r}
+set.seed(1)
+p <- 3
+XA <- matrix(rnorm(60 * p), 60, p)
+XB <- matrix(rnorm(50 * p), 50, p) %*% diag(c(1, 1.6, 0.7))
+cov_M(XA, XB)
+```
+
+## The null is covariance-free
+
+The statistic vanishes when nothing differs, and it is invariant to a common change of basis:
+
+```{r}
+cov_M(XA, XA)
+A <- matrix(c(2, 0.3, -1, 0.1, 1.4, 0.2, 0, 0.5, 1), 3, 3)
+c(original = cov_M(XA, XB), transformed = cov_M(XA %*% A, XB %*% A))
+```
+
+That invariance is the point. Because the null law does not depend on the unknown common
+covariance, it can be calibrated once at the identity and used at every covariance, with no
+nuisance parameter to estimate.
+
+## An exact p-value
+
+`cov_pexact` evaluates the null tail by inverting the exact characteristic function, so the
+test is exact rather than approximate. It agrees with simulation from the covariance-free null,
+which is an independent route:
+
+```{r}
+set.seed(3)
+null <- cov_null(p = 3, nA = 40, nB = 40, B = 20000, seed = 5L)
+q <- unname(quantile(null, c(0.5, 0.9)))
+rbind(simulated_tail = c(0.5, 0.1),
+      exact_tail = vapply(q, function(m) cov_pexact(m, 39, 39, 3), 0))
+```
+
+Applied to the data above, the scale change in one coordinate is detected:
+
+```{r}
+cov_test(XA, XB, method = "exact")$p.value
+```
+
+and two samples from the same law are not:
+
+```{r}
+set.seed(11)
+cov_test(matrix(rnorm(180), 60, 3), matrix(rnorm(180), 60, 3), method = "exact")$p.value
+```
+
+## Differential networks
+
+The same machinery gives a log-domain differential network, $D = \log \mathrm{cov}(X_B) -
+\log \mathrm{cov}(X_A)$. It is symmetric, antisymmetric under swapping the samples, and
+inversion-invariant, so it says the same thing whether you think in covariances or precisions:
+
+```{r}
+D <- cov_logdiff(XA, XB)
+round(D, 4)
+c(antisymmetry = max(abs(D + cov_logdiff(XB, XA))), symmetry = max(abs(D - t(D))))
+```
+
+A max-type statistic in the style of Cai, Liu and Xia is also provided for the sparse
+alternative:
+
+```{r}
+clx_stat(XA, XB)
+```
+
+## Implementation
+
+Everything above runs in a shared C back-end with its own random number generator, so results
+do not depend on R's RNG state, and the same sources are bound from Python.

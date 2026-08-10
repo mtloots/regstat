@@ -163,3 +163,73 @@ void reg_pexact(const double *m, const double *nu1, const double *nu2, const int
   double val = 0.5 + (1.0 / M_PI) * sum * dt;
   *out = val < 0.0 ? 0.0 : (val > 1.0 ? 1.0 : val);
 }
+
+/* --- Log-domain differential network (added for the functional-relationships paper) --- */
+
+/* Symmetric eigendecomposition of a p-by-p matrix (column-major) by the cyclic Jacobi method.
+ * On return, w holds the eigenvalues and V (p-by-p, column-major) their eigenvectors, so that
+ * A = V diag(w) V'. A is copied internally and left unchanged. */
+static void jacobi_sym(const double *A, int p, double *w, double *V) {
+  double *a = (double*) malloc((size_t)p*p*sizeof(double));
+  for (size_t i = 0; i < (size_t)p*p; i++) a[i] = A[i];
+  for (int i = 0; i < p; i++) for (int j = 0; j < p; j++) V[i + (size_t)j*p] = (i == j) ? 1.0 : 0.0;
+  for (int sweep = 0; sweep < 100; sweep++) {
+    double off = 0.0;
+    for (int q = 0; q < p; q++) for (int r = q+1; r < p; r++) off += a[q + (size_t)r*p]*a[q + (size_t)r*p];
+    if (off < 1e-30) break;
+    for (int q = 0; q < p; q++) for (int r = q+1; r < p; r++) {
+      double apq = a[q + (size_t)r*p];
+      if (fabs(apq) < 1e-300) continue;
+      double app = a[q + (size_t)q*p], aqq = a[r + (size_t)r*p];
+      double phi = 0.5 * atan2(2.0*apq, aqq - app);
+      double c = cos(phi), s = sin(phi);
+      for (int k = 0; k < p; k++) {
+        double akq = a[k + (size_t)q*p], akr = a[k + (size_t)r*p];
+        a[k + (size_t)q*p] = c*akq - s*akr;
+        a[k + (size_t)r*p] = s*akq + c*akr;
+      }
+      for (int k = 0; k < p; k++) {
+        double aqk = a[q + (size_t)k*p], ark = a[r + (size_t)k*p];
+        a[q + (size_t)k*p] = c*aqk - s*ark;
+        a[r + (size_t)k*p] = s*aqk + c*ark;
+      }
+      for (int k = 0; k < p; k++) {
+        double vkq = V[k + (size_t)q*p], vkr = V[k + (size_t)r*p];
+        V[k + (size_t)q*p] = c*vkq - s*vkr;
+        V[k + (size_t)r*p] = s*vkq + c*vkr;
+      }
+    }
+  }
+  for (int i = 0; i < p; i++) w[i] = a[i + (size_t)i*p];
+  free(a);
+}
+
+/* Matrix logarithm of a symmetric positive-definite p-by-p matrix (column-major) into out. */
+static void logm_spd(const double *S, int p, double *out) {
+  double *w = (double*) malloc((size_t)p*sizeof(double));
+  double *V = (double*) malloc((size_t)p*p*sizeof(double));
+  jacobi_sym(S, p, w, V);
+  for (int i = 0; i < p; i++) for (int j = 0; j < p; j++) {
+    double s = 0.0;
+    for (int k = 0; k < p; k++) s += V[i + (size_t)k*p] * log(w[k]) * V[j + (size_t)k*p];
+    out[i + (size_t)j*p] = s;
+  }
+  free(w); free(V);
+}
+
+/* Log-domain differential network D = log cov(XB) - log cov(XA) from two column-major data
+ * matrices (XA is nA-by-p, XB is nB-by-p). Writes the p-by-p contrast D (column-major) to Dout.
+ * D is inversion invariant: the same object results whether dependence is read through covariances
+ * or precisions (log of a precision is minus log of the covariance). */
+void reg_logdiff(const double *XA, const double *XB,
+                 const int *nA, const int *nB, const int *p, double *Dout) {
+  int P = *p;
+  double *SA = (double*) malloc((size_t)P*P*sizeof(double));
+  double *SB = (double*) malloc((size_t)P*P*sizeof(double));
+  double *LA = (double*) malloc((size_t)P*P*sizeof(double));
+  double *LB = (double*) malloc((size_t)P*P*sizeof(double));
+  covariance(XA, *nA, P, SA); covariance(XB, *nB, P, SB);
+  logm_spd(SA, P, LA); logm_spd(SB, P, LB);
+  for (size_t i = 0; i < (size_t)P*P; i++) Dout[i] = LB[i] - LA[i];
+  free(SA); free(SB); free(LA); free(LB);
+}

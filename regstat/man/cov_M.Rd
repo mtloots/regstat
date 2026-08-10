@@ -17,3 +17,10 @@ the scalar likelihood-ratio statistic M; \code{NaN} if a group scatter is singul
 \description{
 Box's M statistic for equality of two covariance matrices (C back-end)
 }
+\examples{
+## Box's M vanishes when nothing differs, and is invariant to a common basis change
+set.seed(1)
+XA <- matrix(rnorm(180), 60, 3)
+XB <- matrix(rnorm(150), 50, 3) \%*\% diag(c(1, 1.6, 0.7))
+c(same = cov_M(XA, XA), different = cov_M(XA, XB))
+}

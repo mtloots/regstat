@@ -15,6 +15,7 @@ _lib.reg_mstat.argtypes  = [_dp, _dp, _ip, _ip, _ip, _dp]
 _lib.reg_drawM.argtypes  = [_ip, _ip, _ip, _ip, _ip, _dp]
 _lib.reg_clx.argtypes    = [_dp, _dp, _ip, _ip, _ip, _dp]
 _lib.reg_pexact.argtypes = [_dp, _dp, _dp, _ip, _dp]
+_lib.reg_logdiff.argtypes = [_dp, _dp, _ip, _ip, _ip, _dp]
 
 def _i(v):
     a = (_ct.c_int * 1)(); a[0] = int(v); return a
@@ -61,6 +62,16 @@ def cov_test(XA, XB, method="exact", B=8000, seed=1):
         pv = (1 + sum(1 for v in nul if v >= Mo)) / (B + 1)
         meth = "Exact covariance-change test (covariance-free Jacobi null, Monte Carlo)"
     return {"statistic": Mo, "p_value": pv, "method": meth}
+
+def cov_logdiff(XA, XB):
+    """Log-domain differential network D = log cov(XB) - log cov(XA), returned as a column-major
+    list of p lists (columns). Inversion invariant: identical whether dependence is read through
+    covariances or precisions, so it dissolves the covariance-versus-precision choice."""
+    a, nA, p = _mat(XA); b, nB, pb = _mat(XB)
+    if p != pb: raise ValueError("XA and XB must have the same number of columns")
+    out = (_ct.c_double * (p * p))()
+    _lib.reg_logdiff(a, b, _i(nA), _i(nB), _i(p), out)
+    return [[out[i + j * p] for i in range(p)] for j in range(p)]
 
 def clx_stat(XA, XB):
     """Cai-Liu-Xia max-type two-sample covariance statistic."""

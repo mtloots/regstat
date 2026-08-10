@@ -4,7 +4,8 @@
 ## at the identity calibrates the test at every covariance, with no estimate of the nuisance covariance.
 #' @useDynLib regstat, .registration = TRUE, .fixes = "C_"
 #' @importFrom stats complete.cases
-NULL
+#' @keywords internal
+"_PACKAGE"
 
 .as_mat <- function(X) {
   X <- as.matrix(X); storage.mode(X) <- "double"
@@ -16,6 +17,12 @@ NULL
 #' @param XA numeric data matrix, group A (rows observations, columns variables).
 #' @param XB numeric data matrix, group B, with the same number of columns.
 #' @return the scalar likelihood-ratio statistic M; \code{NaN} if a group scatter is singular.
+#' @examples
+#' ## Box's M vanishes when nothing differs, and is invariant to a common basis change
+#' set.seed(1)
+#' XA <- matrix(rnorm(180), 60, 3)
+#' XB <- matrix(rnorm(150), 50, 3) %*% diag(c(1, 1.6, 0.7))
+#' c(same = cov_M(XA, XA), different = cov_M(XA, XB))
 #' @export
 cov_M <- function(XA, XB) {
   XA <- .as_mat(XA); XB <- .as_mat(XB)
@@ -49,6 +56,9 @@ cov_null <- function(p, nA, nB, B = 8000, seed = 1L) {
 #' @param nu1,nu2 within-group degrees of freedom (sample size minus one).
 #' @param p number of variables.
 #' @return the exact tail probability.
+#' @examples
+#' ## the null tail by inversion of the exact characteristic function
+#' vapply(c(5, 15, 35), function(m) cov_pexact(m, 59, 49, 3), 0)
 #' @export
 cov_pexact <- function(m, nu1, nu2, p)
   .C(C_reg_pexact, m = as.double(m), nu1 = as.double(nu1), nu2 = as.double(nu2),
@@ -66,6 +76,11 @@ cov_pexact <- function(m, nu1, nu2, p)
 #' @param B number of null draws when \code{method = "mc"}.
 #' @param seed integer seed when \code{method = "mc"}.
 #' @return an object of class \code{"htest"}.
+#' @examples
+#' set.seed(1)
+#' XA <- matrix(rnorm(180), 60, 3)
+#' XB <- matrix(rnorm(150), 50, 3) %*% diag(c(1, 1.6, 0.7))
+#' cov_test(XA, XB, method = "exact")$p.value
 #' @export
 cov_test <- function(XA, XB, method = c("exact", "mc"), B = 8000, seed = 1L) {
   method <- match.arg(method)
@@ -80,6 +95,61 @@ cov_test <- function(XA, XB, method = c("exact", "mc"), B = 8000, seed = 1L) {
     meth <- "Exact covariance-change test (covariance-free Jacobi null, Monte Carlo)"
   }
   structure(list(statistic = c(M = Mo), p.value = p, method = meth,
+                 data.name = paste(deparse(substitute(XA)), "and", deparse(substitute(XB)))),
+            class = "htest")
+}
+
+#' Log-domain differential network (C back-end)
+#'
+#' Computes the inversion-invariant differential network \eqn{D = \log \mathrm{cov}(XB) -
+#' \log \mathrm{cov}(XA)} between two groups. Because the logarithm of a precision matrix is minus the
+#' logarithm of the covariance, \code{D} is the same object whether dependence is read through
+#' covariances or precisions, so it dissolves the covariance-versus-precision choice of the differential
+#' network. \code{D} is symmetric; its zero pattern is the changed dependence structure.
+#' @param XA,XB numeric data matrices with the same number of columns.
+#' @return the \eqn{p \times p} symmetric contrast matrix \code{D}.
+#' @examples
+#' ## the log-domain differential network: symmetric, and antisymmetric in its
+#' ## arguments, so it reads the same in covariances or precisions
+#' set.seed(1)
+#' XA <- matrix(rnorm(180), 60, 3)
+#' XB <- matrix(rnorm(150), 50, 3) %*% diag(c(1, 1.6, 0.7))
+#' D <- cov_logdiff(XA, XB)
+#' max(abs(D + cov_logdiff(XB, XA)))
+#' @export
+cov_logdiff <- function(XA, XB) {
+  XA <- .as_mat(XA); XB <- .as_mat(XB); p <- ncol(XA)
+  if (ncol(XB) != p) stop("XA and XB must have the same number of columns")
+  matrix(.C(C_reg_logdiff, XA = XA, XB = XB, nA = nrow(XA), nB = nrow(XB),
+            p = p, out = double(p * p))$out, p, p)
+}
+
+#' Two-sample test for a change in dependence structure via the log-domain contrast
+#'
+#' Tests H0 that two groups share a covariance (equivalently precision) structure, using the
+#' inversion-invariant contrast \code{\link{cov_logdiff}} and its bootstrap covariance. The statistic is
+#' the quadratic form in the vectorised upper triangle of \code{D}, referred to a chi-squared law on
+#' \eqn{p(p+1)/2} degrees of freedom. Unlike the covariance and precision differential networks, the
+#' estimand tested is unambiguous.
+#' @param XA,XB numeric data matrices with the same number of columns.
+#' @param B number of bootstrap resamples for the covariance of \code{D}.
+#' @param seed integer seed for the resampling.
+#' @return an object of class \code{"htest"}.
+#' @export
+diffnet_test <- function(XA, XB, B = 400, seed = 1L) {
+  XA <- .as_mat(XA); XB <- .as_mat(XB); p <- ncol(XA)
+  vech <- function(M) M[upper.tri(M, diag = TRUE)]
+  D <- cov_logdiff(XA, XB); nA <- nrow(XA); nB <- nrow(XB)
+  set.seed(seed)
+  G <- t(replicate(B, {
+    ia <- sample(nA, replace = TRUE); ib <- sample(nB, replace = TRUE)
+    vech(cov_logdiff(XA[ia, , drop = FALSE], XB[ib, , drop = FALSE]))
+  }))
+  v <- vech(D); df <- length(v)
+  Tstat <- drop(v %*% solve(stats::cov(G)) %*% v)
+  structure(list(statistic = c(T = Tstat), parameter = c(df = df),
+                 p.value = stats::pchisq(Tstat, df, lower.tail = FALSE),
+                 method = "Log-domain differential-network test (inversion-invariant, bootstrap covariance)",
                  data.name = paste(deparse(substitute(XA)), "and", deparse(substitute(XB)))),
             class = "htest")
 }

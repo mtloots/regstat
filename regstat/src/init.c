@@ -9,6 +9,7 @@ static const R_CMethodDef CEntries[] = {
   {"reg_drawM",  (DL_FUNC) &reg_drawM,  6},
   {"reg_clx",    (DL_FUNC) &reg_clx,    6},
   {"reg_pexact", (DL_FUNC) &reg_pexact, 5},
+  {"reg_logdiff", (DL_FUNC) &reg_logdiff, 6},
   {NULL, NULL, 0}
 };
 

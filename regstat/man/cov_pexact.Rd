@@ -21,3 +21,7 @@ Evaluates \eqn{P(M > m)} under the covariance-free null deterministically, by nu
 the exact characteristic function -- no simulation. Because the null is covariance-free the result
 depends only on the dimensions.
 }
+\examples{
+## the null tail by inversion of the exact characteristic function
+vapply(c(5, 15, 35), function(m) cov_pexact(m, 59, 49, 3), 0)
+}
