@@ -1,33 +1,35 @@
+---
+output: github_document
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.path = "man/figures/README-")
+```
 
 # regstat
 
 [![R-CMD-check](https://github.com/mtloots/regstat/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/mtloots/regstat/actions/workflows/R-CMD-check.yaml)
 
-An **exact, covariance-free test** for a change in covariance structure.
-The likelihood-ratio null does not depend on the unknown common
-covariance, so one calibration serves every covariance.
+An **exact, covariance-free test** for a change in covariance structure. The likelihood-ratio
+null does not depend on the unknown common covariance, so one calibration serves every covariance.
 
-Computation runs on a shared pure-C back-end that is also bound from
-Python, and the two front ends are checked against each other value by
-value.
+Computation runs on a shared pure-C back-end that is also bound from Python, and the two front
+ends are checked against each other value by value.
 
 ## Installation
 
-``` r
+```r
 # install.packages("remotes")
 remotes::install_github("mtloots/regstat", subdir = "regstat")
 ```
 
 ## Usage
 
-``` r
+```{r example}
 library(regstat)
 set.seed(1)
 XA <- matrix(rnorm(180), 60, 3)
 XB <- matrix(rnorm(150), 50, 3) %*% diag(c(1, 1.6, 0.7))
 c(same = cov_M(XA, XA), different = cov_M(XA, XB))
-#>      same different 
-#>   0.00000  35.19953
 cov_test(XA, XB, method = "exact")$p.value
-#> [1] 6.38278e-06
 ```
