@@ -1,7 +1,10 @@
-*.o
-*.so
-*.dylib
-*.Rcheck/
 __pycache__/
-*.tar.gz
 .DS_Store
+*.bak-*
+*.dylib
+*.egg-info/
+*.o
+*.Rcheck/
+*.so
+*.tar.gz
+regstat-py/dist/
