@@ -164,6 +164,46 @@ void reg_pexact(const double *m, const double *nu1, const double *nu2, const int
   *out = val < 0.0 ? 0.0 : (val > 1.0 ? 1.0 : val);
 }
 
+/* --- Exact null of the determinant functional (added for the exact-power section) ---
+ *
+ * D = log(|A2|/|A1|) for independent Wisharts A_j ~ W_p(nu_j, Sigma); Sigma cancels, so the
+ * null is covariance-free like M's. By the Bartlett decomposition |A_j| is a product of
+ * independent chi-squares with nu_j - i + 1 degrees of freedom, so the characteristic function
+ * of D is a pure product of gamma ratios (the 2^{it} factors cancel between numerator and
+ * denominator):
+ *     Phi_D(t) = prod_i Gamma(b2i + it) Gamma(b1i - it) / { Gamma(b2i) Gamma(b1i) },
+ * b_ji = (nu_j - i + 1)/2. Under the proportional alternative Sigma_2 = lambda Sigma_1 the
+ * Wishart scale property gives D =d D_0 + p log(lambda) EXACTLY, so exact power against the
+ * proportional family is one evaluation of this null survivor at a shifted argument. */
+static double complex cf_D_c(double t, double nu1, double nu2, int p) {
+  double complex s = 0.0;
+  for (int j = 1; j <= p; j++) {
+    double b1 = (nu1 - j + 1) / 2.0, b2 = (nu2 - j + 1) / 2.0;
+    s += clgamma_c(b2 + I * t) - clgamma_c(b2)
+       + clgamma_c(b1 - I * t) - clgamma_c(b1);
+  }
+  return cexp(s);
+}
+
+/* upper-tail probability P(D > x) under the null, by Gil-Pelaez inversion with the same
+ * safeguards as reg_pexact: analytic t -> 0 endpoint from the CF derivative, trapezoidal
+ * end-correction. */
+void reg_pdet(const double *x, const double *nu1, const double *nu2, const int *p, double *out) {
+  double X = *x, n1 = *nu1, n2 = *nu2; int P = *p;
+  double ED = cimag(cf_D_c(1e-5, n1, n2, P)) / 1e-5;
+  double T = 250.0; int N = 250000; double dt = T / N;
+  double g0 = ED - X;
+  double sum = 0.5 * g0, gl = 0.0;
+  for (int k = 1; k <= N; k++) {
+    double t = k * dt;
+    double g = cimag(cexp(-I * t * X) * cf_D_c(t, n1, n2, P)) / t;
+    if (k == N) gl = g; else sum += g;
+  }
+  sum += 0.5 * gl;
+  double val = 0.5 + (1.0 / M_PI) * sum * dt;
+  *out = val < 0.0 ? 0.0 : (val > 1.0 ? 1.0 : val);
+}
+
 /* --- Log-domain differential network (added for the functional-relationships paper) --- */
 
 /* Symmetric eigendecomposition of a p-by-p matrix (column-major) by the cyclic Jacobi method.

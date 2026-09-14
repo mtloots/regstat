@@ -64,6 +64,30 @@ cov_pexact <- function(m, nu1, nu2, p)
   .C(C_reg_pexact, m = as.double(m), nu1 = as.double(nu1), nu2 = as.double(nu2),
      p = as.integer(p), out = double(1))$out
 
+#' Exact null of the determinant functional, and exact power against proportional alternatives
+#'
+#' Upper-tail probability of D = log(det(A2)/det(A1)) under H0, for independent Wisharts with
+#' nu1 and nu2 degrees of freedom in p dimensions; the null is covariance-free, and its
+#' characteristic function is a pure product of gamma ratios by the Bartlett decomposition,
+#' inverted by the same safeguarded Gil-Pelaez quadrature as \code{cov_pexact}. Under the
+#' proportional alternative Sigma2 = lambda * Sigma1 the statistic shifts exactly by
+#' p * log(lambda), so \code{cov_powdet} returns exact, deterministic power for the
+#' determinant chart at threshold \code{crit}.
+#' @param x threshold for the upper-tail probability.
+#' @param lambda scale factor of the proportional alternative.
+#' @param crit chart threshold on the D scale.
+#' @inheritParams cov_pexact
+#' @return the exact tail probability, or the exact power.
+#' @export
+cov_pdet <- function(x, nu1, nu2, p)
+  .C(C_reg_pdet, x = as.double(x), nu1 = as.double(nu1), nu2 = as.double(nu2),
+     p = as.integer(p), out = double(1))$out
+
+#' @rdname cov_pdet
+#' @export
+cov_powdet <- function(lambda, crit, nu1, nu2, p)
+  vapply(lambda, function(l) cov_pdet(crit - p * log(l), nu1, nu2, p), 0)
+
 #' Exact test for a change in covariance structure
 #'
 #' Tests H0 that two groups share a covariance matrix, using the likelihood-ratio statistic M and its

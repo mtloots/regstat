@@ -6,7 +6,7 @@
 \alias{regstat-package}
 \title{regstat: An Exact Test for a Change in Covariance (Dependence) Structure}
 \description{
-An exact finite-sample test for whether two groups share a covariance matrix, the omnibus form of the differential-network question. Under the Gaussian null the likelihood-ratio statistic has a distribution given by the real Jacobi ensemble that is free of the unknown common covariance, so a single Monte-Carlo calibration at the identity serves every covariance with no estimate of the nuisance covariance; this is the property that survives the dimension barrier, where estimating the covariance is hardest. The Cai--Liu--Xia (2013) max-type high-dimensional test is provided for comparison. A pure-C back-end does the numerics and also backs the Python package 'regstat'.
+An exact finite-sample test for whether two groups share a covariance matrix, the omnibus form of the differential-network question. Under the Gaussian null the likelihood-ratio statistic has a distribution given by the real Jacobi ensemble that is free of the unknown common covariance, so a single Monte-Carlo calibration at the identity serves every covariance with no estimate of the nuisance covariance; this is the property that survives the dimension barrier, where estimating the covariance is hardest. The Cai--Liu--Xia (2013) max-type high-dimensional test is provided for comparison. A pure-C back-end does the numerics and also backs the 'Python' package 'regstat'.
 }
 \seealso{
 Useful links:

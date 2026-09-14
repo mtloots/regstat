@@ -40,6 +40,7 @@ void reg_pexact(const double *m, const double *nu1, const double *nu2, const int
 /* Log-domain differential network D = log cov(XB) - log cov(XA) from two column-major data
  * matrices (XA is nA-by-p, XB is nB-by-p). Writes the p-by-p contrast D (column-major) to Dout.
  * Inversion invariant: identical whether dependence is read through covariances or precisions. */
+void reg_pdet(const double *x, const double *nu1, const double *nu2, const int *p, double *out);
 void reg_logdiff(const double *XA, const double *XB,
                  const int *nA, const int *nB, const int *p, double *Dout);
 

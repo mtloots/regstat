@@ -15,6 +15,7 @@ _lib.reg_mstat.argtypes  = [_dp, _dp, _ip, _ip, _ip, _dp]
 _lib.reg_drawM.argtypes  = [_ip, _ip, _ip, _ip, _ip, _dp]
 _lib.reg_clx.argtypes    = [_dp, _dp, _ip, _ip, _ip, _dp]
 _lib.reg_pexact.argtypes = [_dp, _dp, _dp, _ip, _dp]
+_lib.reg_pdet.argtypes   = [_dp, _dp, _dp, _ip, _dp]
 _lib.reg_logdiff.argtypes = [_dp, _dp, _ip, _ip, _ip, _dp]
 
 def _i(v):
@@ -46,6 +47,16 @@ def cov_null(p, nA, nB, B=8000, seed=1):
 def cov_pexact(m, nu1, nu2, p):
     """Exact right-tail probability P(M > m) by CF inversion (deterministic, no simulation)."""
     out = _d1(0.0); _lib.reg_pexact(_d1(m), _d1(nu1), _d1(nu2), _i(p), out); return out[0]
+
+def cov_pdet(x, nu1, nu2, p):
+    """Exact upper-tail probability of D = log(det(A2)/det(A1)) under the covariance-free null,
+    by the same safeguarded Gil-Pelaez inversion as cov_pexact. Same bytes as the R front."""
+    out = _d1(0.0); _lib.reg_pdet(_d1(x), _d1(nu1), _d1(nu2), _i(p), out); return out[0]
+
+def cov_powdet(lam, crit, nu1, nu2, p):
+    """Exact power of the determinant chart against the proportional alternative
+    Sigma2 = lam * Sigma1: the statistic shifts by exactly p*log(lam)."""
+    return [cov_pdet(crit - p * _math.log(l), nu1, nu2, p) for l in lam]
 
 def cov_test(XA, XB, method="exact", B=8000, seed=1):
     """Exact covariance-change test: statistic M against its covariance-free null. By default the null

@@ -5,3 +5,6 @@
 ^\.github$
 ^_pkgdown\.yml$
 ^docs$
+^cran-comments\.md$
+^.*\.bak-.*$
+^man\.bak-.*$
