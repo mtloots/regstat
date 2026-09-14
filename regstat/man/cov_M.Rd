@@ -12,7 +12,10 @@ cov_M(XA, XB)
 \item{XB}{numeric data matrix, group B, with the same number of columns.}
 }
 \value{
-the scalar likelihood-ratio statistic M; \code{NaN} if a group scatter is singular.
+a single numeric value: the likelihood-ratio statistic \eqn{M} for equality of the two
+  covariance matrices, on the scale for which the null law is the real Jacobi ensemble. Larger
+  values are stronger evidence against equal covariance. \code{NaN} if either group scatter is
+  singular, which happens when a group has fewer observations than dimensions.
 }
 \description{
 Box's M statistic for equality of two covariance matrices (C back-end)

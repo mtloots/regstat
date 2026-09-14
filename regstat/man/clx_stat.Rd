@@ -10,7 +10,9 @@ clx_stat(XA, XB)
 \item{XA, XB}{numeric data matrices with the same number of columns.}
 }
 \value{
-the maximum standardised squared difference of covariance entries.
+a single numeric value: the largest standardised squared difference over all
+  \eqn{p(p+1)/2} covariance entries. It is the statistic of the max-type test, so it responds to
+  a change in a few entries rather than to a diffuse change across many.
 }
 \description{
 Cai--Liu--Xia max-type covariance statistic (C back-end)

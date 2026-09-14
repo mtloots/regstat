@@ -14,7 +14,10 @@ diffnet_test(XA, XB, B = 400, seed = 1L)
 \item{seed}{integer seed for the resampling.}
 }
 \value{
-an object of class \code{"htest"}.
+an object of class \code{"htest"}: a list with \code{statistic} (the quadratic form
+  \eqn{T}), \code{parameter} (its degrees of freedom), \code{p.value} from the chi-squared
+  null, \code{method} and \code{data.name}. It prints as a standard hypothesis test. A small
+  p-value says the two dependence structures differ somewhere, without saying where.
 }
 \description{
 Tests H0 that two groups share a covariance (equivalently precision) structure, using the

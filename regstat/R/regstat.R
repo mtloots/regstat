@@ -16,7 +16,10 @@
 #'
 #' @param XA numeric data matrix, group A (rows observations, columns variables).
 #' @param XB numeric data matrix, group B, with the same number of columns.
-#' @return the scalar likelihood-ratio statistic M; \code{NaN} if a group scatter is singular.
+#' @return a single numeric value: the likelihood-ratio statistic \eqn{M} for equality of the two
+#'   covariance matrices, on the scale for which the null law is the real Jacobi ensemble. Larger
+#'   values are stronger evidence against equal covariance. \code{NaN} if either group scatter is
+#'   singular, which happens when a group has fewer observations than dimensions.
 #' @examples
 #' ## Box's M vanishes when nothing differs, and is invariant to a common basis change
 #' set.seed(1)
@@ -40,7 +43,10 @@ cov_M <- function(XA, XB) {
 #' @param nA,nB per-group sample sizes.
 #' @param B number of draws.
 #' @param seed integer seed for the self-contained generator.
-#' @return a numeric vector of \code{B} draws of M under equal covariance.
+#' @return a numeric vector of length \code{B}: independent draws of the statistic \eqn{M} under
+#'   the null of equal covariance. Because that null is free of the unknown common covariance, the
+#'   draws may be taken at the identity and reused for any covariance; the vector is the Monte Carlo
+#'   reference distribution against which an observed \eqn{M} is compared.
 #' @export
 cov_null <- function(p, nA, nB, B = 8000, seed = 1L) {
   .C(C_reg_drawM, p = as.integer(p), nA = as.integer(nA), nB = as.integer(nB),
@@ -55,7 +61,9 @@ cov_null <- function(p, nA, nB, B = 8000, seed = 1L) {
 #' @param m observed statistic value.
 #' @param nu1,nu2 within-group degrees of freedom (sample size minus one).
 #' @param p number of variables.
-#' @return the exact tail probability.
+#' @return a single numeric value in \eqn{[0, 1]}: the exact upper-tail probability
+#'   \eqn{P(M > m)} under the null of equal covariance, obtained by inverting the characteristic
+#'   function rather than by simulation. Used directly as a p-value.
 #' @examples
 #' ## the null tail by inversion of the exact characteristic function
 #' vapply(c(5, 15, 35), function(m) cov_pexact(m, 59, 49, 3), 0)
@@ -77,7 +85,13 @@ cov_pexact <- function(m, nu1, nu2, p)
 #' @param lambda scale factor of the proportional alternative.
 #' @param crit chart threshold on the D scale.
 #' @inheritParams cov_pexact
-#' @return the exact tail probability, or the exact power.
+#' @return a single numeric value in \eqn{[0, 1]} from each function.
+#'   \code{cov_pdet} returns the exact upper-tail probability \eqn{P(D > x)} of the determinant
+#'   statistic under the null of equal covariance, so it is a p-value.
+#'   \code{cov_powdet} returns the exact power of the determinant chart at threshold \code{crit}
+#'   against the proportional alternative \eqn{\Sigma_2 = \lambda \Sigma_1}, evaluated at each
+#'   element of \code{lambda}, so its length is that of \code{lambda}. The power is deterministic,
+#'   not simulated, because the alternative shifts the statistic by exactly \eqn{p \log \lambda}.
 #' @export
 cov_pdet <- function(x, nu1, nu2, p)
   .C(C_reg_pdet, x = as.double(x), nu1 = as.double(nu1), nu2 = as.double(nu2),
@@ -99,7 +113,10 @@ cov_powdet <- function(lambda, crit, nu1, nu2, p)
 #' @param method \code{"exact"} (CF inversion) or \code{"mc"} (Monte Carlo).
 #' @param B number of null draws when \code{method = "mc"}.
 #' @param seed integer seed when \code{method = "mc"}.
-#' @return an object of class \code{"htest"}.
+#' @return an object of class \code{"htest"}: a list with \code{statistic} (the observed
+#'   \eqn{M}), \code{p.value}, \code{method} naming which null was used, and \code{data.name}.
+#'   It prints as a standard hypothesis test. The p-value is exact when
+#'   \code{method = "exact"} and Monte Carlo otherwise.
 #' @examples
 #' set.seed(1)
 #' XA <- matrix(rnorm(180), 60, 3)
@@ -131,7 +148,10 @@ cov_test <- function(XA, XB, method = c("exact", "mc"), B = 8000, seed = 1L) {
 #' covariances or precisions, so it dissolves the covariance-versus-precision choice of the differential
 #' network. \code{D} is symmetric; its zero pattern is the changed dependence structure.
 #' @param XA,XB numeric data matrices with the same number of columns.
-#' @return the \eqn{p \times p} symmetric contrast matrix \code{D}.
+#' @return a numeric matrix of dimension \eqn{p \times p}, symmetric: the log-domain contrast
+#'   \eqn{D} between the two covariance structures. An entry is zero when the corresponding
+#'   dependence is unchanged between the groups, so the matrix is read as the estimated differential
+#'   network itself rather than as a test statistic.
 #' @examples
 #' ## the log-domain differential network: symmetric, and antisymmetric in its
 #' ## arguments, so it reads the same in covariances or precisions
@@ -158,7 +178,10 @@ cov_logdiff <- function(XA, XB) {
 #' @param XA,XB numeric data matrices with the same number of columns.
 #' @param B number of bootstrap resamples for the covariance of \code{D}.
 #' @param seed integer seed for the resampling.
-#' @return an object of class \code{"htest"}.
+#' @return an object of class \code{"htest"}: a list with \code{statistic} (the quadratic form
+#'   \eqn{T}), \code{parameter} (its degrees of freedom), \code{p.value} from the chi-squared
+#'   null, \code{method} and \code{data.name}. It prints as a standard hypothesis test. A small
+#'   p-value says the two dependence structures differ somewhere, without saying where.
 #' @export
 diffnet_test <- function(XA, XB, B = 400, seed = 1L) {
   XA <- .as_mat(XA); XB <- .as_mat(XB); p <- ncol(XA)
@@ -181,7 +204,9 @@ diffnet_test <- function(XA, XB, B = 400, seed = 1L) {
 #' Cai--Liu--Xia max-type covariance statistic (C back-end)
 #'
 #' @param XA,XB numeric data matrices with the same number of columns.
-#' @return the maximum standardised squared difference of covariance entries.
+#' @return a single numeric value: the largest standardised squared difference over all
+#'   \eqn{p(p+1)/2} covariance entries. It is the statistic of the max-type test, so it responds to
+#'   a change in a few entries rather than to a diffuse change across many.
 #' @export
 clx_stat <- function(XA, XB) {
   XA <- .as_mat(XA); XB <- .as_mat(XB)
@@ -197,7 +222,9 @@ clx_stat <- function(XA, XB) {
 #' covariance-free alternative.
 #' @param XA,XB numeric data matrices with the same number of columns.
 #' @param alpha nominal level.
-#' @return an object of class \code{"htest"}.
+#' @return an object of class \code{"htest"}: a list with \code{statistic} (the maximum
+#'   standardised squared difference), \code{p.value} from the extreme-value null, \code{method}
+#'   and \code{data.name}. It prints as a standard hypothesis test.
 #' @export
 clx_test <- function(XA, XB, alpha = 0.05) {
   XA <- .as_mat(XA); XB <- .as_mat(XB); p <- ncol(XA)

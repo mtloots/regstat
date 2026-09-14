@@ -12,7 +12,9 @@ clx_test(XA, XB, alpha = 0.05)
 \item{alpha}{nominal level.}
 }
 \value{
-an object of class \code{"htest"}.
+an object of class \code{"htest"}: a list with \code{statistic} (the maximum
+  standardised squared difference), \code{p.value} from the extreme-value null, \code{method}
+  and \code{data.name}. It prints as a standard hypothesis test.
 }
 \description{
 The Cai--Liu--Xia (2013) test as used out of the box. Its extreme-value calibration is accurate at

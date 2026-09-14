@@ -21,7 +21,13 @@ cov_powdet(lambda, crit, nu1, nu2, p)
 \item{crit}{chart threshold on the D scale.}
 }
 \value{
-the exact tail probability, or the exact power.
+a single numeric value in \eqn{[0, 1]} from each function.
+  \code{cov_pdet} returns the exact upper-tail probability \eqn{P(D > x)} of the determinant
+  statistic under the null of equal covariance, so it is a p-value.
+  \code{cov_powdet} returns the exact power of the determinant chart at threshold \code{crit}
+  against the proportional alternative \eqn{\Sigma_2 = \lambda \Sigma_1}, evaluated at each
+  element of \code{lambda}, so its length is that of \code{lambda}. The power is deterministic,
+  not simulated, because the alternative shifts the statistic by exactly \eqn{p \log \lambda}.
 }
 \description{
 Upper-tail probability of D = log(det(A2)/det(A1)) under H0, for independent Wisharts with

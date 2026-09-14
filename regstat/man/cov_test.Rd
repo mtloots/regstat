@@ -16,7 +16,10 @@ cov_test(XA, XB, method = c("exact", "mc"), B = 8000, seed = 1L)
 \item{seed}{integer seed when \code{method = "mc"}.}
 }
 \value{
-an object of class \code{"htest"}.
+an object of class \code{"htest"}: a list with \code{statistic} (the observed
+  \eqn{M}), \code{p.value}, \code{method} naming which null was used, and \code{data.name}.
+  It prints as a standard hypothesis test. The p-value is exact when
+  \code{method = "exact"} and Monte Carlo otherwise.
 }
 \description{
 Tests H0 that two groups share a covariance matrix, using the likelihood-ratio statistic M and its

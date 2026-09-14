@@ -10,7 +10,10 @@ cov_logdiff(XA, XB)
 \item{XA, XB}{numeric data matrices with the same number of columns.}
 }
 \value{
-the \eqn{p \times p} symmetric contrast matrix \code{D}.
+a numeric matrix of dimension \eqn{p \times p}, symmetric: the log-domain contrast
+  \eqn{D} between the two covariance structures. An entry is zero when the corresponding
+  dependence is unchanged between the groups, so the matrix is read as the estimated differential
+  network itself rather than as a test statistic.
 }
 \description{
 Computes the inversion-invariant differential network \eqn{D = \log \mathrm{cov}(XB) -

@@ -16,7 +16,10 @@ cov_null(p, nA, nB, B = 8000, seed = 1L)
 \item{seed}{integer seed for the self-contained generator.}
 }
 \value{
-a numeric vector of \code{B} draws of M under equal covariance.
+a numeric vector of length \code{B}: independent draws of the statistic \eqn{M} under
+  the null of equal covariance. Because that null is free of the unknown common covariance, the
+  draws may be taken at the identity and reused for any covariance; the vector is the Monte Carlo
+  reference distribution against which an observed \eqn{M} is compared.
 }
 \description{
 Simulates the exact Gaussian null of \code{\link{cov_M}} at the given dimensions. Because the null

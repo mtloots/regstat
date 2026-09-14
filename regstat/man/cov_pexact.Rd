@@ -14,7 +14,9 @@ cov_pexact(m, nu1, nu2, p)
 \item{p}{number of variables.}
 }
 \value{
-the exact tail probability.
+a single numeric value in \eqn{[0, 1]}: the exact upper-tail probability
+  \eqn{P(M > m)} under the null of equal covariance, obtained by inverting the characteristic
+  function rather than by simulation. Used directly as a p-value.
 }
 \description{
 Evaluates \eqn{P(M > m)} under the covariance-free null deterministically, by numerical inversion of
